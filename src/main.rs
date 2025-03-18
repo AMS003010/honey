@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     db_init().await?;
     
-    HttpServer::new(|| {
+    let server = HttpServer::new(|| {
         App::new()
             .service(createTodo)
             .service(getTodo)
@@ -39,8 +39,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .service(getAllTodo)
     })
     .bind(("localhost",8080))?
-    .run()
-    .await?;
+    .workers(4)
+    .shutdown_timeout(60)
+    .run();
 
+    println!("Server running at http://localhost:8080 🚀");
+    server.await.unwrap();
     Ok(())
 }

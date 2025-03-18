@@ -15,6 +15,6 @@ pub async fn db_init() -> Result<(), Box<dyn std::error::Error>> {
 
     DB.use_ns("namespace").use_db("database").await?;
 
-    println!("✅ Connected to SurrealDB!");
+    println!("\n✅ Connected to SurrealDB!");
     Ok(())
 }
