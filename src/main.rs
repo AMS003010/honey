@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .shutdown_timeout(60)
     .run();
 
-    println!("Server running at http://localhost:8080 🚀");
+    println!("🚀 Server running at http://localhost:8080");
     server.await.unwrap();
     Ok(())
 }
