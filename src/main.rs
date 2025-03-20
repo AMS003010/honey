@@ -1,8 +1,9 @@
 use actix_web::{web, App, HttpServer};
-use surrealdb::engine::remote::ws::Ws;
-use surrealdb::opt::auth::Root;
-use surrealdb::Surreal;
-use surrealdb::engine::remote::ws::Client;
+use db::db_pool::DbPool;
+
+mod db {
+    pub mod db_pool;
+}
 
 mod models {
     pub mod todo;
@@ -18,36 +19,29 @@ mod utils {
 
 #[actix_web::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize DB connection
-    let db: Surreal<Client> = Surreal::init();
+    // Create a connection pool with 5 connections
+    let pool = DbPool::new(
+        5, 
+        "localhost:8000", 
+        "root", 
+        "root", 
+        "namespace", 
+        "database"
+    ).await?;
     
-    // Connect to SurrealDB
-    db.connect::<Ws>("localhost:8000").await?;
-
-    // Sign in to SurrealDB
-    db.signin(Root {
-        username: "root",
-        password: "root",
-    }).await?;
-
-    // Use namespace and database
-    db.use_ns("namespace").use_db("database").await?;
+    println!("\n✅ Connected to SurrealDB with pool of 5 connections!");
     
-    println!("\n✅ Connected to SurrealDB!");
-    
-    // Share the DB connection with handlers
-    let db_data = web::Data::new(db);
+    // Share the pool with handlers
+    let pool_data = web::Data::new(pool);
     
     let server = HttpServer::new(move || {
         App::new()
-            .app_data(db_data.clone())
-            .service(web::scope("/api")
-                .service(routes::todo_routes::create_todo)
-                .service(routes::todo_routes::get_todo)
-                .service(routes::todo_routes::update_todo)
-                .service(routes::todo_routes::delete_todo)
-                .service(routes::todo_routes::get_all_todo)
-            )
+            .app_data(pool_data.clone())
+            .service(routes::todo_routes::create_todo)
+            .service(routes::todo_routes::get_todo)
+            .service(routes::todo_routes::update_todo)
+            .service(routes::todo_routes::delete_todo)
+            .service(routes::todo_routes::get_all_todo)
     })
     .bind(("localhost", 8080))?
     .workers(4)

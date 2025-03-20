@@ -1,16 +1,16 @@
 use crate::utils::error::Error;
 use crate::models::todo::Todo;
+use crate::db::db_pool::DbPool;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
-use surrealdb::Surreal;
-use surrealdb::engine::remote::ws::Client;
 use surrealdb::sql::Thing;
 
 #[post("/todo/{id}")]
 pub async fn create_todo(
     path: web::Path<String>, 
     body: web::Json<Todo>,
-    db: web::Data<Surreal<Client>>
+    pool: web::Data<DbPool>
 ) -> impl Responder {
+    let db = pool.get_connection();
     let id = path.into_inner();
     let todo = body.into_inner();
 
@@ -28,8 +28,9 @@ pub async fn create_todo(
 #[get("/todo/{id}")]
 pub async fn get_todo(
     path: web::Path<String>,
-    db: web::Data<Surreal<Client>>
+    pool: web::Data<DbPool>
 ) -> impl Responder {
+    let db = pool.get_connection();
     let id = path.into_inner();
 
     let fetched: Result<Option<Todo>, _> = db.select(("todo", id)).await;
@@ -45,8 +46,9 @@ pub async fn get_todo(
 pub async fn update_todo(
     path: web::Path<String>, 
     body: web::Json<Todo>,
-    db: web::Data<Surreal<Client>>
+    pool: web::Data<DbPool>
 ) -> impl Responder {
+    let db = pool.get_connection();
     let id = path.into_inner();
     let todo = body.into_inner();
 
@@ -64,8 +66,9 @@ pub async fn update_todo(
 #[delete("/todo/{id}")]
 pub async fn delete_todo(
     path: web::Path<String>,
-    db: web::Data<Surreal<Client>>
+    pool: web::Data<DbPool>
 ) -> impl Responder {
+    let db = pool.get_connection();
     let id = path.into_inner();
 
     let deleted: Result<Option<Todo>, _> = db.delete(("todo", id)).await;
@@ -79,8 +82,9 @@ pub async fn delete_todo(
 
 #[get("/todo")]
 pub async fn get_all_todo(
-    db: web::Data<Surreal<Client>>
+    pool: web::Data<DbPool>
 ) -> impl Responder {
+    let db = pool.get_connection();
     let result: Result<Vec<Todo>, _> = db.select("todo").await;
 
     match result {
